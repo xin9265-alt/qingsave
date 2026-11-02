@@ -6,7 +6,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 app = FastAPI(title="QingSave")
-HOSTS = {"v.douyin.com", "www.douyin.com", "douyin.com", "iesdouyin.com"}
+HOSTS = {"v.douyin.com", "www.douyin.com", "douyin.com", "iesdouyin.com", "www.iesdouyin.com", "m.douyin.com"}
 PAT = re.compile(r'https?://(?:v\.douyin\.com|www\.douyin\.com|douyin\.com)/[^\s<>"\']+', re.I)
 
 class Payload(BaseModel):
@@ -15,7 +15,7 @@ class Payload(BaseModel):
 def check_url(url):
     p = urlparse(url)
     if p.scheme != "https" or p.hostname not in HOSTS or p.port not in (None, 443) or p.username or p.password:
-        raise HTTPException(400, "仅允许抖音官方 HTTPS 链接")
+        raise HTTPException(400, f"不支持的跳转域名：{p.hostname or '未知'}。请提交完整抖音分享链接")
     try:
         ips = {x[4][0] for x in socket.getaddrinfo(p.hostname, 443, type=socket.SOCK_STREAM)}
         if not ips or any(not ipaddress.ip_address(ip).is_global for ip in ips):
@@ -48,11 +48,11 @@ async def parse(data: Payload):
         else:
             raise HTTPException(502, "跳转次数过多")
     check_url(current)
-    match = re.search(r"/video/(\d+)", current)
+    match = re.search(r"(?:/video/|[?&](?:modal_id|aweme_id|item_id)=)(\d+)", current)
     return {"success": True, "original_url": original, "resolved_url": current,
             "video_id": match.group(1) if match else None, "video_url": None,
             "status": "metadata_only",
-            "message": "已解析分享链接。尚未配置授权的视频媒体接口，暂不支持无水印下载。"}
+            "message": "已完成链接跳转解析。" + ("已识别视频ID。" if match else "暂未识别视频ID，可能是抖音跳转格式变化。") + " 尚未接入授权媒体下载接口。"}
 
 @app.get("/api/health")
 def health():
