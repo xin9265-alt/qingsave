@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>轻存 QingSave · 视频链接解析</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f7f7fc;color:#25233b;font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}header{max-width:850px;margin:auto;padding:25px;font-weight:800;font-size:23px}header span{background:#7154e7;color:white;border-radius:12px;padding:5px 12px;margin-right:9px}main{max-width:760px;margin:60px auto;padding:0 18px}h1{text-align:center;font-size:clamp(30px,6vw,50px);letter-spacing:-1px}h1 em{color:#7457e8;font-style:normal}.sub{text-align:center;color:#747c91;line-height:1.7;margin-bottom:35px}.panel{background:white;padding:27px;border:1px solid #e7e7f2;border-radius:24px;box-shadow:0 20px 50px #2222440b}label{display:block;font-weight:700;margin-bottom:12px}textarea{width:100%;min-height:140px;resize:vertical;border:1px solid #dadbea;border-radius:13px;padding:15px;font:15px/1.6 inherit}button{border:0;border-radius:12px;padding:14px 20px;font-weight:700;cursor:pointer}.actions{display:flex;gap:12px;margin-top:15px}.primary{flex:1;background:#7457e8;color:white}.secondary{background:#f0edff;color:#6647d0}.hint{color:#8a8fa2;font-size:12px;line-height:1.6}#result{display:none;margin-top:20px;padding-top:20px;border-top:1px solid #eee;overflow-wrap:anywhere}#status{background:#f1edff;padding:14px;border-radius:12px;color:#5944aa}.detail{color:#73798b;font-size:13px}video{max-width:100%;margin-top:15px}footer{text-align:center;color:#999;font-size:12px;margin:50px 0}@media(max-width:550px){main{margin:28px auto}.panel{padding:18px}.actions{flex-direction:column}}
+</style></head><body>
+<header><span>↓</span>轻存 QingSave</header>
+<main><h1>视频链接解析，<em>轻松一点</em></h1><p class="sub">复制抖音分享文案，粘贴即可识别链接。<br>手机、电脑均可使用。</p>
+<section class="panel"><label for="share">粘贴视频分享链接</label><textarea id="share" placeholder="复制打开抖音... https://v.douyin.com/xxxx/"></textarea>
+<div class="actions"><button class="secondary" id="paste">📋 粘贴</button><button class="primary" id="parse">⚡ 立即解析</button></div>
+<p class="hint">仅保存你有权使用的视频。无水印下载需要额外接入经授权的媒体资源服务。</p>
+<div id="result"><p id="status"></p><div id="details"></div></div></section>
+</main><footer>© QingSave · 独立演示项目，与抖音平台无隶属关系</footer>
+<script>
+const $=id=>document.getElementById(id), share=$('share'),result=$('result'),status=$('status'),details=$('details');
+$('paste').onclick=async()=>{try{share.value=await navigator.clipboard.readText()}catch(e){alert('请手动粘贴分享文案')}};
+function show(s){result.style.display='block';status.textContent=s;details.replaceChildren()}
+function add(k,v){let p=document.createElement('p');p.className='detail';p.textContent=k+'：'+(v||'未识别');details.append(p)}
+$('parse').onclick=async()=>{if(!share.value.trim())return show('请先粘贴链接');let btn=$('parse');btn.disabled=true;btn.textContent='解析中…';show('正在解析链接');try{let r=await fetch('/api/parse',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:share.value})});let d=await r.json();if(!r.ok)throw Error(d.detail||'解析失败');show(d.message);add('分享链接',d.original_url);add('跳转链接',d.resolved_url);add('视频ID',d.video_id);if(d.video_url){let v=document.createElement('video');v.controls=true;v.src=d.video_url;details.append(v);let a=document.createElement('a');a.href=d.video_url;a.target='_blank';a.rel='noopener noreferrer';a.textContent='打开视频资源';details.append(a)}}catch(e){show(e.message)}finally{btn.disabled=false;btn.textContent='⚡ 立即解析'}};
+</script></body></html>
